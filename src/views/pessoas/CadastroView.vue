@@ -3,8 +3,9 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AlertaMensagem from '@/components/ui/AlertaMensagem.vue'
 import { pessoaService } from '@/services/pessoaService.js'
+import { tipoAcessoService } from '@/services/tipoAcessoService.js'
 import { obterMensagemErro, obterMensagensValidacao } from '@/utils/apiError.js'
-import { aplicarMascaraCpf } from '@/utils/formatters.js'
+import { aplicarMascaraCpf, aplicarMascaraTelefone } from '@/utils/formatters.js'
 
 const props = defineProps({ id: String })
 const router = useRouter()
@@ -23,7 +24,10 @@ const form = reactive({
   endereco: '',
   cidade: '',
   estado: '',
+  tipoAcessoId: '',
 })
+
+const tiposAcesso = ref([])
 
 const erros = reactive({})
 const erroGeral = ref('')
@@ -39,6 +43,10 @@ function limparErros() {
 
 function mascararCpf() {
   form.cpf = aplicarMascaraCpf(form.cpf)
+}
+
+function mascararTelefone() {
+  form.telefone = aplicarMascaraTelefone(form.telefone)
 }
 
 function validar() {
@@ -104,7 +112,10 @@ async function salvar() {
     nome: form.nome.trim(),
     email: form.email.trim(),
     estado: form.estado.trim().toUpperCase(),
+    telefone: form.telefone.replace(/\D/g, '') || null,
   }
+  if (!dto.tipoAcessoId) delete dto.tipoAcessoId
+  else dto.tipoAcessoId = Number(dto.tipoAcessoId)
 
   try {
     if (editando.value) {
@@ -130,6 +141,7 @@ async function carregarPessoa() {
   try {
     const resposta = await pessoaService.buscarPorId(props.id)
     Object.assign(form, resposta.data)
+    form.telefone = aplicarMascaraTelefone(form.telefone)
   } catch (error) {
     erroGeral.value = obterMensagemErro(error, 'Não foi possível carregar a pessoa.')
   } finally {
@@ -137,8 +149,13 @@ async function carregarPessoa() {
   }
 }
 
-onMounted(() => {
-  if (editando.value) carregarPessoa()
+onMounted(async () => {
+  try {
+    tiposAcesso.value = (await tipoAcessoService.listarAtivos()).data
+  } catch (error) {
+    erroGeral.value = obterMensagemErro(error, 'Não foi possível carregar os tipos de acesso.')
+  }
+  if (editando.value) await carregarPessoa()
 })
 </script>
 
@@ -213,8 +230,11 @@ onMounted(() => {
             id="telefone"
             v-model="form.telefone"
             class="form-control"
-            maxlength="20"
+            maxlength="15"
             autocomplete="tel"
+            inputmode="numeric"
+            placeholder="(00) 00000-0000"
+            @input="mascararTelefone"
           />
         </div>
 
@@ -248,6 +268,14 @@ onMounted(() => {
             @input="form.estado = form.estado.toUpperCase()"
           />
           <div v-if="erros.estado" class="form-error">{{ erros.estado }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="tipo-acesso" class="form-label">Tipo de acesso</label>
+          <select id="tipo-acesso" v-model="form.tipoAcessoId" class="form-control">
+            <option value="">Nenhum</option>
+            <option v-for="tipo in tiposAcesso" :key="tipo.id" :value="tipo.id">{{ tipo.nome }}</option>
+          </select>
         </div>
       </div>
 

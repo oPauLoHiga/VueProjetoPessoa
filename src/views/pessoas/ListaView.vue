@@ -5,6 +5,7 @@ import AlertaMensagem from '@/components/ui/AlertaMensagem.vue'
 import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 import { pessoaService } from '@/services/pessoaService.js'
 import { obterMensagemErro } from '@/utils/apiError.js'
+import { aplicarMascaraTelefone } from '@/utils/formatters.js'
 
 const route = useRoute()
 
@@ -23,7 +24,8 @@ const pessoasFiltradas = computed(() => {
   if (!termo) return pessoas.value
 
   return pessoas.value.filter((pessoa) =>
-    pessoa.nome?.toLowerCase().includes(termo)
+    String(pessoa.id ?? '').includes(termo)
+    || pessoa.nome?.toLowerCase().includes(termo)
     || pessoa.cpf?.includes(termo)
     || pessoa.email?.toLowerCase().includes(termo),
   )
@@ -124,7 +126,9 @@ onMounted(() => {
       <h1 class="page-title">Pessoas cadastradas</h1>
       <p class="page-subtitle">Consulte, filtre e administre os cadastros.</p>
     </div>
-    <router-link to="/pessoas/nova" class="btn btn-primary">+ Nova pessoa</router-link>
+    <div class="header-actions">
+      <router-link to="/pessoas/nova" class="btn btn-primary">+ Nova pessoa</router-link>
+    </div>
   </div>
 
   <AlertaMensagem tipo="erro" :mensagem="erro" @fechar="erro = ''" />
@@ -135,7 +139,8 @@ onMounted(() => {
       v-model="filtro"
       class="form-control search-input"
       type="search"
-      placeholder="Filtrar por nome, CPF ou e-mail..."
+      placeholder="Buscar por ID, nome, CPF ou e-mail..."
+      aria-label="Buscar pessoas na lista"
     />
 
     <span class="total-badge">{{ pessoasFiltradas.length }} resultado(s)</span>
@@ -189,7 +194,7 @@ onMounted(() => {
           <td>{{ pessoa.cpf }}</td>
           <td>
             <span>{{ pessoa.email }}</span>
-            <small>{{ pessoa.telefone || 'Sem telefone' }}</small>
+            <small>{{ pessoa.telefone ? aplicarMascaraTelefone(pessoa.telefone) : 'Sem telefone' }}</small>
           </td>
           <td>
             <span class="badge" :class="pessoa.ativo ? 'badge-success' : 'badge-danger'">
@@ -248,6 +253,11 @@ onMounted(() => {
   margin-bottom: 18px;
 }
 
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .search-input {
   flex: 1;
 }
@@ -283,6 +293,14 @@ td small {
   }
 
   .view-toggle .btn {
+    flex: 1;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions .btn {
     flex: 1;
   }
 }

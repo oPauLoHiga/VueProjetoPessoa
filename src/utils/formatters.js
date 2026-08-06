@@ -12,6 +12,15 @@ export function aplicarMascaraCpf(valor = '') {
   return numeros
 }
 
+export function aplicarMascaraTelefone(valor = '') {
+  const numeros = valor.replace(/\D/g, '').slice(0, 11)
+  if (numeros.length > 10) return numeros.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3')
+  if (numeros.length > 6) return numeros.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3')
+  if (numeros.length > 2) return numeros.replace(/(\d{2})(\d{0,5})/, '($1) $2')
+  if (numeros.length) return `(${numeros}`
+  return ''
+}
+
 export function formatarData(data) {
   if (!data) return '—'
   const [ano, mes, dia] = data.split('-')

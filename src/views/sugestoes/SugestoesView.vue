@@ -1,0 +1,11 @@
+<script setup>
+import { onMounted, ref } from 'vue'
+import { sugestaoService } from '@/services/sugestaoService.js'
+import AlertaMensagem from '@/components/ui/AlertaMensagem.vue'
+import { obterMensagemErro } from '@/utils/apiError.js'
+const sugestoes=ref([]), erro=ref(''), carregando=ref(false), filtro=ref(''), atualizando=ref(''); const status=['PENDENTE','ANALISANDO','APROVADA','REJEITADA']
+async function carregar(){carregando.value=true;try{sugestoes.value=(await (filtro.value?sugestaoService.listarPorStatus(filtro.value):sugestaoService.listarTodas())).data}catch(e){erro.value=obterMensagemErro(e,'Não foi possível carregar as sugestões.')}finally{carregando.value=false}}
+async function alterar(s){atualizando.value=s.id;try{await sugestaoService.alterarStatus(s.id,s.status)}catch(e){erro.value=obterMensagemErro(e,'Não foi possível alterar o status.');await carregar()}finally{atualizando.value=''}}
+onMounted(carregar)
+</script>
+<template><div class="page-header"><div><h1 class="page-title">Sugestões</h1><p class="page-subtitle">Acompanhe e atualize as sugestões enviadas.</p></div><router-link to="/sugestoes/nova" class="btn btn-primary">Nova sugestão</router-link></div><AlertaMensagem tipo="erro" :mensagem="erro" @fechar="erro=''"/><div class="filters"><button class="btn btn-sm" :class="!filtro?'btn-primary':'btn-ghost'" @click="filtro='';carregar()">Todas</button><button v-for="item in status" :key="item" class="btn btn-sm" :class="filtro===item?'btn-primary':'btn-ghost'" @click="filtro=item;carregar()">{{item}}</button></div><div v-if="carregando" class="loading-center"><div class="spinner"/></div><div v-else-if="!sugestoes.length" class="empty-state">Nenhuma sugestão encontrada.</div><div v-else class="table-wrap"><table><thead><tr><th>Título</th><th>Pessoa</th><th>Descrição</th><th>Status</th></tr></thead><tbody><tr v-for="s in sugestoes" :key="s.id"><td><strong>{{s.titulo}}</strong></td><td>{{s.pessoaNome}}</td><td>{{s.descricao}}</td><td><select v-model="s.status" class="form-control status" :disabled="atualizando===s.id" @change="alterar(s)"><option v-for="item in status" :key="item">{{item}}</option></select></td></tr></tbody></table></div></template><style scoped>.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.status{min-width:130px}</style>

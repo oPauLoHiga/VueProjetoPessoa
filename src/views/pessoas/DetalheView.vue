@@ -4,8 +4,9 @@ import { useRouter } from 'vue-router'
 import AlertaMensagem from '@/components/ui/AlertaMensagem.vue'
 import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 import { pessoaService } from '@/services/pessoaService.js'
+import { sugestaoService } from '@/services/sugestaoService.js'
 import { obterMensagemErro } from '@/utils/apiError.js'
-import { formatarData, formatarDataHora } from '@/utils/formatters.js'
+import { aplicarMascaraTelefone, formatarData, formatarDataHora } from '@/utils/formatters.js'
 
 const props = defineProps({ id: String })
 const router = useRouter()
@@ -16,6 +17,7 @@ const erro = ref('')
 const mensagem = ref('')
 const acao = ref('')
 const modalAberto = ref(false)
+const sugestoes = ref([])
 
 async function carregar() {
   carregando.value = true
@@ -24,6 +26,7 @@ async function carregar() {
   try {
     const resposta = await pessoaService.buscarPorId(props.id)
     pessoa.value = resposta.data
+    sugestoes.value = (await sugestaoService.listarPorPessoa(props.id)).data
   } catch (error) {
     erro.value = obterMensagemErro(error, 'Não foi possível carregar a pessoa.')
   } finally {
@@ -127,12 +130,16 @@ onMounted(carregar)
 
       <div class="detail-grid">
         <div class="detail-item">
+          <span>Tipo de acesso</span>
+          <strong>{{ pessoa.tipoAcessoNome || '—' }}</strong>
+        </div>
+        <div class="detail-item">
           <span>CPF</span>
           <strong>{{ pessoa.cpf }}</strong>
         </div>
         <div class="detail-item">
           <span>Telefone</span>
-          <strong>{{ pessoa.telefone || '—' }}</strong>
+          <strong>{{ pessoa.telefone ? aplicarMascaraTelefone(pessoa.telefone) : '—' }}</strong>
         </div>
         <div class="detail-item">
           <span>Data de nascimento</span>
@@ -155,6 +162,12 @@ onMounted(carregar)
           <strong>{{ formatarDataHora(pessoa.atualizadoEm) }}</strong>
         </div>
       </div>
+
+      <section class="sugestoes">
+        <div class="sugestoes-header"><h3>Sugestões enviadas</h3><router-link to="/sugestoes/nova" class="btn btn-outline btn-sm">Nova sugestão</router-link></div>
+        <p v-if="!sugestoes.length" class="empty">Esta pessoa ainda não enviou sugestões.</p>
+        <div v-for="s in sugestoes" :key="s.id" class="sugestao"><strong>{{ s.titulo }}</strong><span class="badge badge-success">{{ s.status }}</span><p>{{ s.descricao }}</p></div>
+      </section>
 
       <div class="profile-actions">
         <button
@@ -278,6 +291,7 @@ onMounted(carregar)
   gap: 10px;
   padding: 20px 24px;
 }
+.sugestoes{padding:0 24px 20px}.sugestoes-header{display:flex;justify-content:space-between;align-items:center}.sugestao{padding:12px 0;border-top:1px solid var(--gray-200)}.sugestao .badge{margin-left:10px}.sugestao p,.empty{margin:7px 0 0;color:var(--gray-700)}
 
 @media (max-width: 600px) {
   .profile-heading {
