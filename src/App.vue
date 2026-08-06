@@ -27,8 +27,8 @@ const menuAberto = ref(false)
         <ul class="nav-links" :class="{ 'is-open': menuAberto }">
           <li><router-link to="/" @click="menuAberto = false">Início</router-link></li>
           <li><router-link to="/pessoas" @click="menuAberto = false">Listar Pessoas</router-link></li>
-          <li><router-link to="/tipos-acesso" @click="menuAberto = false">Tipos de Acesso</router-link></li>
           <li><router-link to="/sugestoes" @click="menuAberto = false">Sugestões</router-link></li>
+          <li><router-link to="/tipos-acesso" @click="menuAberto = false">Tipos de Acesso</router-link></li>
           <li><router-link to="/mapa-api" @click="menuAberto = false">Mapa da API</router-link></li>
         </ul>
       </div>
